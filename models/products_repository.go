@@ -4,11 +4,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type ProductFetcher interface {
+	GetAllProducts() ([]Product, error)
+}
+
 type ProductsRepository struct {
 	db *gorm.DB
 }
 
-func NewProductsRepository(db *gorm.DB) *ProductsRepository {
+func NewProductsRepository(db *gorm.DB) ProductFetcher {
 	return &ProductsRepository{
 		db: db,
 	}
