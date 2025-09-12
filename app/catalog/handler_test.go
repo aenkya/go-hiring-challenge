@@ -22,6 +22,7 @@ func TestHandleGet(t *testing.T) {
 		mockTotal        int64
 		mockCountErr     error
 		mockProductsErr  error
+		mockFilters      models.ProductFilters
 		wantStatus       int
 		wantResponse     *Response
 		wantErrMessage   string
@@ -49,8 +50,9 @@ func TestHandleGet(t *testing.T) {
 						Name: "Category 2",
 					}},
 			},
-			mockTotal:  2,
-			wantStatus: http.StatusOK,
+			mockTotal:   2,
+			mockFilters: models.ProductFilters{},
+			wantStatus:  http.StatusOK,
 			wantResponse: &Response{
 				Products: []Product{
 					{
@@ -81,6 +83,7 @@ func TestHandleGet(t *testing.T) {
 			name:             "count products repo error",
 			url:              "/catalog",
 			mockCountErr:     errors.New("db count error"),
+			mockFilters:      models.ProductFilters{},
 			wantStatus:       http.StatusInternalServerError,
 			wantErrMessage:   "db count error",
 			expectCount:      true,
@@ -91,6 +94,7 @@ func TestHandleGet(t *testing.T) {
 			url:              "/catalog",
 			mockTotal:        5,
 			mockProductsErr:  errors.New("db pagination error"),
+			mockFilters:      models.ProductFilters{},
 			wantStatus:       http.StatusInternalServerError,
 			wantErrMessage:   "db pagination error",
 			expectCount:      true,
@@ -111,8 +115,9 @@ func TestHandleGet(t *testing.T) {
 					},
 				},
 			},
-			mockTotal:  2,
-			wantStatus: http.StatusOK,
+			mockTotal:   2,
+			mockFilters: models.ProductFilters{},
+			wantStatus:  http.StatusOK,
 			wantResponse: &Response{
 				Products: []Product{
 					{
@@ -136,6 +141,7 @@ func TestHandleGet(t *testing.T) {
 			url:              "/catalog?limit=0",
 			mockTotal:        0,
 			mockProducts:     []models.Product{},
+			mockFilters:      models.ProductFilters{},
 			wantStatus:       http.StatusOK,
 			wantResponse:     &Response{Products: []Product{}, Total: 0},
 			expectCount:      true,
@@ -148,6 +154,7 @@ func TestHandleGet(t *testing.T) {
 			url:              "/catalog?limit=101",
 			mockTotal:        0,
 			mockProducts:     []models.Product{},
+			mockFilters:      models.ProductFilters{},
 			wantStatus:       http.StatusOK,
 			wantResponse:     &Response{Products: []Product{}, Total: 0},
 			expectCount:      true,
@@ -160,8 +167,77 @@ func TestHandleGet(t *testing.T) {
 			url:              "/catalog?offset=abc&limit=xyz",
 			mockTotal:        0,
 			mockProducts:     []models.Product{},
+			mockFilters:      models.ProductFilters{},
 			wantStatus:       http.StatusOK,
 			wantResponse:     &Response{Products: []Product{}, Total: 0},
+			expectCount:      true,
+			expectPagination: true,
+			expectedOffset:   0,
+			expectedLimit:    10,
+		},
+		{
+			name: "success with category filter",
+			url:  "/catalog?category=C1",
+			mockProducts: []models.Product{
+				{
+					Code:  "P1",
+					Price: decimal.NewFromFloat(123.45),
+					Category: models.Category{
+						Code: "C1",
+						Name: "Category 1",
+					},
+				},
+			},
+			mockTotal:   1,
+			mockFilters: models.ProductFilters{Category: "C1"},
+			wantStatus:  http.StatusOK,
+			wantResponse: &Response{
+				Products: []Product{
+					{
+						Code:  "P1",
+						Price: 123.45,
+						Category: Category{
+							Code: "C1",
+							Name: "Category 1",
+						},
+					},
+				},
+				Total: 1,
+			},
+			expectCount:      true,
+			expectPagination: true,
+			expectedOffset:   0,
+			expectedLimit:    10,
+		},
+		{
+			name: "success with price less than filter",
+			url:  "/catalog?priceLessThan=100",
+			mockProducts: []models.Product{
+				{
+					Code:  "P2",
+					Price: decimal.NewFromFloat(67.89),
+					Category: models.Category{
+						Code: "C2",
+						Name: "Category 2",
+					},
+				},
+			},
+			mockTotal:   1,
+			mockFilters: models.ProductFilters{PriceLT: float64Ptr(100)},
+			wantStatus:  http.StatusOK,
+			wantResponse: &Response{
+				Products: []Product{
+					{
+						Code:  "P2",
+						Price: 67.89,
+						Category: Category{
+							Code: "C2",
+							Name: "Category 2",
+						},
+					},
+				},
+				Total: 1,
+			},
 			expectCount:      true,
 			expectPagination: true,
 			expectedOffset:   0,
@@ -175,10 +251,13 @@ func TestHandleGet(t *testing.T) {
 
 			repo := models.NewMockProductFetcher(ctrl)
 			if tt.expectCount {
-				repo.EXPECT().CountProducts().Return(tt.mockTotal, tt.mockCountErr)
+				repo.EXPECT().CountProducts(tt.mockFilters).Return(tt.mockTotal, tt.mockCountErr)
 			}
+
 			if tt.expectPagination {
-				repo.EXPECT().GetAllProductsWithPagination(tt.expectedOffset, tt.expectedLimit).Return(tt.mockProducts, tt.mockProductsErr)
+				repo.EXPECT().
+					GetAllProductsWithPagination(tt.expectedOffset, tt.expectedLimit, tt.mockFilters).
+					Return(tt.mockProducts, tt.mockProductsErr)
 			}
 
 			handler := &CatalogHandler{repo: repo}
@@ -212,4 +291,8 @@ func TestHandleGet(t *testing.T) {
 			}
 		})
 	}
+}
+
+func float64Ptr(f float64) *float64 {
+	return &f
 }

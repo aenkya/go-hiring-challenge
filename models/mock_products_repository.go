@@ -40,18 +40,18 @@ func (m *MockProductFetcher) EXPECT() *MockProductFetcherMockRecorder {
 }
 
 // CountProducts mocks base method.
-func (m *MockProductFetcher) CountProducts() (int64, error) {
+func (m *MockProductFetcher) CountProducts(filters ProductFilters) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountProducts")
+	ret := m.ctrl.Call(m, "CountProducts", filters)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountProducts indicates an expected call of CountProducts.
-func (mr *MockProductFetcherMockRecorder) CountProducts() *gomock.Call {
+func (mr *MockProductFetcherMockRecorder) CountProducts(filters any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountProducts", reflect.TypeOf((*MockProductFetcher)(nil).CountProducts))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountProducts", reflect.TypeOf((*MockProductFetcher)(nil).CountProducts), filters)
 }
 
 // GetAllProducts mocks base method.
@@ -70,16 +70,16 @@ func (mr *MockProductFetcherMockRecorder) GetAllProducts() *gomock.Call {
 }
 
 // GetAllProductsWithPagination mocks base method.
-func (m *MockProductFetcher) GetAllProductsWithPagination(offset, limit int) ([]Product, error) {
+func (m *MockProductFetcher) GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllProductsWithPagination", offset, limit)
+	ret := m.ctrl.Call(m, "GetAllProductsWithPagination", offset, limit, filters)
 	ret0, _ := ret[0].([]Product)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllProductsWithPagination indicates an expected call of GetAllProductsWithPagination.
-func (mr *MockProductFetcherMockRecorder) GetAllProductsWithPagination(offset, limit any) *gomock.Call {
+func (mr *MockProductFetcherMockRecorder) GetAllProductsWithPagination(offset, limit, filters any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProductsWithPagination", reflect.TypeOf((*MockProductFetcher)(nil).GetAllProductsWithPagination), offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProductsWithPagination", reflect.TypeOf((*MockProductFetcher)(nil).GetAllProductsWithPagination), offset, limit, filters)
 }

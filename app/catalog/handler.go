@@ -56,13 +56,23 @@ func (h *CatalogHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	total, err := h.repo.CountProducts()
+	filters := models.ProductFilters{
+		Category: q.Get("category"),
+	}
+
+	if p := q.Get("priceLessThan"); p != "" {
+		if price, err := strconv.ParseFloat(p, 64); err == nil {
+			filters.PriceLT = &price
+		}
+	}
+
+	total, err := h.repo.CountProducts(filters)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res, err := h.repo.GetAllProductsWithPagination(offset, limit)
+	res, err := h.repo.GetAllProductsWithPagination(offset, limit, filters)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

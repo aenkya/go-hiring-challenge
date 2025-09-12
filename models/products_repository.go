@@ -6,10 +6,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type ProductFilters struct {
+	Category string
+	PriceLT  *float64
+}
+
 type ProductFetcher interface {
 	GetAllProducts() ([]Product, error)
-	CountProducts() (int64, error)
-	GetAllProductsWithPagination(offset, limit int) ([]Product, error)
+	CountProducts(filters ProductFilters) (int64, error)
+	GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error)
 }
 
 type ProductsRepository struct {
@@ -30,20 +35,34 @@ func (r *ProductsRepository) GetAllProducts() ([]Product, error) {
 	return products, nil
 }
 
-func (r *ProductsRepository) CountProducts() (int64, error) {
+func (r *ProductsRepository) CountProducts(filters ProductFilters) (int64, error) {
 	var count int64
-	if err := r.db.Model(&Product{}).Count(&count).Error; err != nil {
+	query := r.db.Model(&Product{})
+	query = applyFilters(query, filters)
+	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}
 
 	return count, nil
 }
 
-func (r *ProductsRepository) GetAllProductsWithPagination(offset, limit int) ([]Product, error) {
+func (r *ProductsRepository) GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error) {
 	var products []Product
-	if err := r.db.Preload("Variants").Preload("Category").Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+	query := r.db.Preload("Variants").Preload("Category")
+	query = applyFilters(query, filters)
+	if err := query.Offset(offset).Limit(limit).Find(&products).Error; err != nil {
 		return nil, err
 	}
 
 	return products, nil
+}
+
+func applyFilters(query *gorm.DB, filters ProductFilters) *gorm.DB {
+	if filters.Category != "" {
+		query = query.Joins("Category").Where(`"Category"."code" = ?`, filters.Category)
+	}
+	if filters.PriceLT != nil {
+		query = query.Where("price < ?", *filters.PriceLT)
+	}
+	return query
 }
