@@ -39,6 +39,21 @@ func (m *MockProductFetcher) EXPECT() *MockProductFetcherMockRecorder {
 	return m.recorder
 }
 
+// CountProducts mocks base method.
+func (m *MockProductFetcher) CountProducts() (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountProducts")
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountProducts indicates an expected call of CountProducts.
+func (mr *MockProductFetcherMockRecorder) CountProducts() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountProducts", reflect.TypeOf((*MockProductFetcher)(nil).CountProducts))
+}
+
 // GetAllProducts mocks base method.
 func (m *MockProductFetcher) GetAllProducts() ([]Product, error) {
 	m.ctrl.T.Helper()
@@ -52,4 +67,19 @@ func (m *MockProductFetcher) GetAllProducts() ([]Product, error) {
 func (mr *MockProductFetcherMockRecorder) GetAllProducts() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProducts", reflect.TypeOf((*MockProductFetcher)(nil).GetAllProducts))
+}
+
+// GetAllProductsWithPagination mocks base method.
+func (m *MockProductFetcher) GetAllProductsWithPagination(offset, limit int) ([]Product, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllProductsWithPagination", offset, limit)
+	ret0, _ := ret[0].([]Product)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllProductsWithPagination indicates an expected call of GetAllProductsWithPagination.
+func (mr *MockProductFetcherMockRecorder) GetAllProductsWithPagination(offset, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProductsWithPagination", reflect.TypeOf((*MockProductFetcher)(nil).GetAllProductsWithPagination), offset, limit)
 }

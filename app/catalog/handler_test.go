@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/mytheresa/go-hiring-challenge/models"
@@ -15,16 +16,24 @@ import (
 
 func TestHandleGet(t *testing.T) {
 	tests := []struct {
-		name           string
-		products       []models.Product
-		repoErr        error
-		wantStatus     int
-		wantProducts   []Product
-		wantErrMessage string
+		name             string
+		url              string
+		mockProducts     []models.Product
+		mockTotal        int64
+		mockCountErr     error
+		mockProductsErr  error
+		wantStatus       int
+		wantResponse     *Response
+		wantErrMessage   string
+		expectCount      bool
+		expectPagination bool
+		expectedOffset   int
+		expectedLimit    int
 	}{
 		{
-			name: "success",
-			products: []models.Product{
+			name: "success with default pagination",
+			url:  "/catalog",
+			mockProducts: []models.Product{
 				{
 					Code:  "P1",
 					Price: decimal.NewFromFloat(123.45),
@@ -40,47 +49,141 @@ func TestHandleGet(t *testing.T) {
 						Name: "Category 2",
 					}},
 			},
-			repoErr:    nil,
+			mockTotal:  2,
 			wantStatus: http.StatusOK,
-			wantProducts: []Product{
-				{
-					Code:  "P1",
-					Price: 123.45,
-					Category: Category{
-						Code: "C1",
-						Name: "Category 1",
+			wantResponse: &Response{
+				Products: []Product{
+					{
+						Code:  "P1",
+						Price: 123.45,
+						Category: Category{
+							Code: "C1",
+							Name: "Category 1",
+						},
+					},
+					{
+						Code:  "P2",
+						Price: 67.89,
+						Category: Category{
+							Code: "C2",
+							Name: "Category 2",
+						},
 					},
 				},
+				Total: 2,
+			},
+			expectCount:      true,
+			expectPagination: true,
+			expectedOffset:   0,
+			expectedLimit:    10,
+		},
+		{
+			name:             "count products repo error",
+			url:              "/catalog",
+			mockCountErr:     errors.New("db count error"),
+			wantStatus:       http.StatusInternalServerError,
+			wantErrMessage:   "db count error",
+			expectCount:      true,
+			expectPagination: false,
+		},
+		{
+			name:             "get all products with pagination repo error",
+			url:              "/catalog",
+			mockTotal:        5,
+			mockProductsErr:  errors.New("db pagination error"),
+			wantStatus:       http.StatusInternalServerError,
+			wantErrMessage:   "db pagination error",
+			expectCount:      true,
+			expectPagination: true,
+			expectedOffset:   0,
+			expectedLimit:    10,
+		},
+		{
+			name: "success with custom pagination",
+			url:  "/catalog?offset=1&limit=1",
+			mockProducts: []models.Product{
 				{
 					Code:  "P2",
-					Price: 67.89,
-					Category: Category{
+					Price: decimal.NewFromFloat(67.89),
+					Category: models.Category{
 						Code: "C2",
 						Name: "Category 2",
 					},
 				},
 			},
+			mockTotal:  2,
+			wantStatus: http.StatusOK,
+			wantResponse: &Response{
+				Products: []Product{
+					{
+						Code:  "P2",
+						Price: 67.89,
+						Category: Category{
+							Code: "C2",
+							Name: "Category 2",
+						},
+					},
+				},
+				Total: 2,
+			},
+			expectCount:      true,
+			expectPagination: true,
+			expectedOffset:   1,
+			expectedLimit:    1,
 		},
 		{
-			name:           "repo error",
-			products:       nil,
-			repoErr:        errors.New("db error"),
-			wantStatus:     http.StatusInternalServerError,
-			wantErrMessage: "db error",
+			name:             "invalid limit defaults to 1",
+			url:              "/catalog?limit=0",
+			mockTotal:        0,
+			mockProducts:     []models.Product{},
+			wantStatus:       http.StatusOK,
+			wantResponse:     &Response{Products: []Product{}, Total: 0},
+			expectCount:      true,
+			expectPagination: true,
+			expectedOffset:   0,
+			expectedLimit:    1,
+		},
+		{
+			name:             "limit over 100 is capped at 100",
+			url:              "/catalog?limit=101",
+			mockTotal:        0,
+			mockProducts:     []models.Product{},
+			wantStatus:       http.StatusOK,
+			wantResponse:     &Response{Products: []Product{}, Total: 0},
+			expectCount:      true,
+			expectPagination: true,
+			expectedOffset:   0,
+			expectedLimit:    100,
+		},
+		{
+			name:             "invalid offset and limit are ignored",
+			url:              "/catalog?offset=abc&limit=xyz",
+			mockTotal:        0,
+			mockProducts:     []models.Product{},
+			wantStatus:       http.StatusOK,
+			wantResponse:     &Response{Products: []Product{}, Total: 0},
+			expectCount:      true,
+			expectPagination: true,
+			expectedOffset:   0,
+			expectedLimit:    10,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			repo := models.NewMockProductFetcher(ctrl)
-			repo.EXPECT().GetAllProducts().Return(tt.products, tt.repoErr)
+			if tt.expectCount {
+				repo.EXPECT().CountProducts().Return(tt.mockTotal, tt.mockCountErr)
+			}
+			if tt.expectPagination {
+				repo.EXPECT().GetAllProductsWithPagination(tt.expectedOffset, tt.expectedLimit).Return(tt.mockProducts, tt.mockProductsErr)
+			}
 
 			handler := &CatalogHandler{repo: repo}
 
-			req := httptest.NewRequest(http.MethodGet, "/catalog", nil)
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			rr := httptest.NewRecorder()
 
 			handler.HandleGet(rr, req)
@@ -89,7 +192,7 @@ func TestHandleGet(t *testing.T) {
 				t.Fatalf("expected status %d, got %d", tt.wantStatus, rr.Code)
 			}
 
-			if tt.wantStatus == http.StatusOK {
+			if tt.wantResponse != nil {
 				if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
 					t.Errorf("expected Content-Type application/json, got %s", ct)
 				}
@@ -99,14 +202,8 @@ func TestHandleGet(t *testing.T) {
 					t.Fatalf("failed to decode response: %v", err)
 				}
 
-				if len(resp.Products) != len(tt.wantProducts) {
-					t.Errorf("expected %d products, got %d", len(tt.wantProducts), len(resp.Products))
-				}
-
-				for i, p := range tt.wantProducts {
-					if resp.Products[i].Code != p.Code || resp.Products[i].Price != p.Price {
-						t.Errorf("unexpected product[%d]: %+v", i, resp.Products[i])
-					}
+				if !reflect.DeepEqual(resp, *tt.wantResponse) {
+					t.Errorf("unexpected response body: got %+v, want %+v", resp, *tt.wantResponse)
 				}
 			} else if tt.wantErrMessage != "" {
 				if !bytes.Contains(rr.Body.Bytes(), []byte(tt.wantErrMessage)) {

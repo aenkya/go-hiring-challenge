@@ -3,12 +3,14 @@ package catalog
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/mytheresa/go-hiring-challenge/models"
 )
 
 type Response struct {
 	Products []Product `json:"products"`
+	Total    int64     `json:"total"`
 }
 
 type Product struct {
@@ -33,7 +35,34 @@ func NewCatalogHandler(r models.ProductFetcher) *CatalogHandler {
 }
 
 func (h *CatalogHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
-	res, err := h.repo.GetAllProducts()
+	q := r.URL.Query()
+	offset, limit := 0, 10
+
+	if o := q.Get("offset"); o != "" {
+		if n, err := strconv.Atoi(o); err == nil {
+			offset = n
+		}
+	}
+
+	if l := q.Get("limit"); l != "" {
+		if n, err := strconv.Atoi(l); err == nil {
+			if n < 1 {
+				n = 1
+			} else if n > 100 {
+				n = 100
+			}
+
+			limit = n
+		}
+	}
+
+	total, err := h.repo.CountProducts()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res, err := h.repo.GetAllProductsWithPagination(offset, limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -57,6 +86,7 @@ func (h *CatalogHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 	response := Response{
 		Products: products,
+		Total:    total,
 	}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
