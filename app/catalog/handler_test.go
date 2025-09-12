@@ -19,20 +19,46 @@ func TestHandleGet(t *testing.T) {
 		products       []models.Product
 		repoErr        error
 		wantStatus     int
-		wantProducts   []models.Product
+		wantProducts   []Product
 		wantErrMessage string
 	}{
 		{
 			name: "success",
 			products: []models.Product{
-				{Code: "P1", Price: decimal.NewFromFloat(123.45)},
-				{Code: "P2", Price: decimal.NewFromFloat(67.89)},
+				{
+					Code:  "P1",
+					Price: decimal.NewFromFloat(123.45),
+					Category: models.Category{
+						Code: "C1",
+						Name: "Category 1",
+					}},
+				{
+					Code:  "P2",
+					Price: decimal.NewFromFloat(67.89),
+					Category: models.Category{
+						Code: "C2",
+						Name: "Category 2",
+					}},
 			},
 			repoErr:    nil,
 			wantStatus: http.StatusOK,
-			wantProducts: []models.Product{
-				{Code: "P1", Price: decimal.NewFromFloat(123.45)},
-				{Code: "P2", Price: decimal.NewFromFloat(67.89)},
+			wantProducts: []Product{
+				{
+					Code:  "P1",
+					Price: 123.45,
+					Category: Category{
+						Code: "C1",
+						Name: "Category 1",
+					},
+				},
+				{
+					Code:  "P2",
+					Price: 67.89,
+					Category: Category{
+						Code: "C2",
+						Name: "Category 2",
+					},
+				},
 			},
 		},
 		{
@@ -78,7 +104,7 @@ func TestHandleGet(t *testing.T) {
 				}
 
 				for i, p := range tt.wantProducts {
-					if resp.Products[i].Code != p.Code || resp.Products[i].Price != p.Price.InexactFloat64() {
+					if resp.Products[i].Code != p.Code || resp.Products[i].Price != p.Price {
 						t.Errorf("unexpected product[%d]: %+v", i, resp.Products[i])
 					}
 				}
