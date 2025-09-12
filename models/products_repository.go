@@ -64,9 +64,11 @@ func applyFilters(query *gorm.DB, filters ProductFilters) *gorm.DB {
 	if filters.Category != "" {
 		query = query.Joins("Category").Where(`"Category"."code" = ?`, filters.Category)
 	}
+
 	if filters.PriceLT != nil {
 		query = query.Where("price < ?", *filters.PriceLT)
 	}
+
 	return query
 }
 

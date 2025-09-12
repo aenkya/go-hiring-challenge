@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/mytheresa/go-hiring-challenge/app/api"
 	"github.com/mytheresa/go-hiring-challenge/models"
 )
 
@@ -81,13 +82,13 @@ func (h *CatalogHandler) HandleGetProducts(w http.ResponseWriter, r *http.Reques
 
 	total, err := h.repo.CountProducts(filters)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		api.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	res, err := h.repo.GetAllProductsWithPagination(offset, limit, filters)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		api.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -104,18 +105,12 @@ func (h *CatalogHandler) HandleGetProducts(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// Return the products as a JSON response
-	w.Header().Set("Content-Type", "application/json")
-
 	response := GetProductsResponse{
 		Products: products,
 		Total:    total,
 	}
 
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	api.OKResponse(w, response)
 }
 
 func (h *CatalogHandler) HandleGetProduct(w http.ResponseWriter, r *http.Request) {
@@ -123,12 +118,12 @@ func (h *CatalogHandler) HandleGetProduct(w http.ResponseWriter, r *http.Request
 	product, err := h.repo.GetProductByCode(code)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		api.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if product == nil {
-		http.Error(w, "Product not found", http.StatusNotFound)
+		api.ErrorResponse(w, http.StatusNotFound, "Product not found")
 		return
 	}
 
@@ -154,41 +149,34 @@ func (h *CatalogHandler) HandleGetProduct(w http.ResponseWriter, r *http.Request
 		Variants: variants,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	api.OKResponse(w, resp)
 }
 
 func (h *CatalogHandler) HandleCreateCategory(w http.ResponseWriter, r *http.Request) {
 	var newCategory models.Category
 	if err := json.NewDecoder(r.Body).Decode(&newCategory); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		api.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if newCategory.Code == "" || newCategory.Name == "" {
-		http.Error(w, "Category code and name are required", http.StatusBadRequest)
+		api.ErrorResponse(w, http.StatusBadRequest, "Category code and name are required")
 		return
 	}
 
 	if err := h.repo.CreateCategory(&newCategory); err != nil {
-		http.Error(w, "Failed to create category", http.StatusInternalServerError)
+		api.ErrorResponse(w, http.StatusInternalServerError, "Failed to create category")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(newCategory); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	api.OKResponse(w, newCategory)
 }
 
 func (h *CatalogHandler) HandleGetCategories(w http.ResponseWriter, r *http.Request) {
 	res, err := h.repo.GetAllCategories()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		api.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -200,9 +188,5 @@ func (h *CatalogHandler) HandleGetCategories(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(categories); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	api.OKResponse(w, categories)
 }
