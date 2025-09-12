@@ -160,3 +160,25 @@ func (h *CatalogHandler) HandleGetProduct(w http.ResponseWriter, r *http.Request
 		return
 	}
 }
+
+func (h *CatalogHandler) HandleGetCategories(w http.ResponseWriter, r *http.Request) {
+	res, err := h.repo.GetAllCategories()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	categories := make([]Category, len(res))
+	for i, c := range res {
+		categories[i] = Category{
+			Code: c.Code,
+			Name: c.Name,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(categories); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}

@@ -422,6 +422,80 @@ func TestHandleGetProduct(t *testing.T) {
 	}
 }
 
+func TestHandleGetCategories(t *testing.T) {
+	tests := []struct {
+		name           string
+		mockCategories []models.Category
+		mockError      error
+		wantStatus     int
+		wantResponse   []Category
+		wantErrMessage string
+	}{
+		{
+			name: "success",
+			mockCategories: []models.Category{
+				{Code: "C1", Name: "Category 1"},
+				{Code: "C2", Name: "Category 2"},
+			},
+			mockError:  nil,
+			wantStatus: http.StatusOK,
+			wantResponse: []Category{
+				{Code: "C1", Name: "Category 1"},
+				{Code: "C2", Name: "Category 2"},
+			},
+		},
+		{
+			name:           "repository error",
+			mockCategories: nil,
+			mockError:      errors.New("db error"),
+			wantStatus:     http.StatusInternalServerError,
+			wantErrMessage: "db error",
+		},
+		{
+			name:           "success with no categories",
+			mockCategories: []models.Category{},
+			mockError:      nil,
+			wantStatus:     http.StatusOK,
+			wantResponse:   []Category{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			repo := models.NewMockProductFetcher(ctrl)
+
+			repo.EXPECT().GetAllCategories().Return(tt.mockCategories, tt.mockError)
+
+			handler := &CatalogHandler{repo: repo}
+
+			req := httptest.NewRequest(http.MethodGet, "/categories", nil)
+			rr := httptest.NewRecorder()
+
+			handler.HandleGetCategories(rr, req)
+
+			if rr.Code != tt.wantStatus {
+				t.Fatalf("expected status %d, got %d", tt.wantStatus, rr.Code)
+			}
+
+			if tt.wantResponse != nil {
+				if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+					t.Errorf("expected Content-Type application/json, got %s", ct)
+				}
+
+				var resp []Category
+				if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+					t.Fatalf("failed to decode response: %v", err)
+				}
+
+				if !reflect.DeepEqual(resp, tt.wantResponse) {
+					t.Errorf("unexpected response body: got %+v, want %+v", resp, tt.wantResponse)
+				}
+			}
+		})
+	}
+}
+
 func float64Ptr(f float64) *float64 {
 	return &f
 }

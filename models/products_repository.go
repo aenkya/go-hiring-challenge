@@ -16,6 +16,7 @@ type ProductFetcher interface {
 	CountProducts(filters ProductFilters) (int64, error)
 	GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error)
 	GetProductByCode(code string) (*Product, error)
+	GetAllCategories() ([]Category, error)
 }
 
 type ProductsRepository struct {
@@ -79,4 +80,13 @@ func (r *ProductsRepository) GetProductByCode(code string) (*Product, error) {
 	}
 
 	return &product, nil
+}
+
+func (r *ProductsRepository) GetAllCategories() ([]Category, error) {
+	var categories []Category
+	if err := r.db.Find(&categories).Error; err != nil {
+		return nil, err
+	}
+
+	return categories, nil
 }
