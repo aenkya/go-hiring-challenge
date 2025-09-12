@@ -15,6 +15,7 @@ type ProductFetcher interface {
 	GetAllProducts() ([]Product, error)
 	CountProducts(filters ProductFilters) (int64, error)
 	GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error)
+	GetProductByCode(code string) (*Product, error)
 }
 
 type ProductsRepository struct {
@@ -65,4 +66,17 @@ func applyFilters(query *gorm.DB, filters ProductFilters) *gorm.DB {
 		query = query.Where("price < ?", *filters.PriceLT)
 	}
 	return query
+}
+
+func (r *ProductsRepository) GetProductByCode(code string) (*Product, error) {
+	var product Product
+	if err := r.db.Preload("Variants").Preload("Category").Where("code = ?", code).First(&product).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &product, nil
 }

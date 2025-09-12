@@ -14,7 +14,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestHandleGet(t *testing.T) {
+func TestHandleGetProducts(t *testing.T) {
 	tests := []struct {
 		name             string
 		url              string
@@ -24,7 +24,7 @@ func TestHandleGet(t *testing.T) {
 		mockProductsErr  error
 		mockFilters      models.ProductFilters
 		wantStatus       int
-		wantResponse     *Response
+		wantResponse     *GetProductsResponse
 		wantErrMessage   string
 		expectCount      bool
 		expectPagination bool
@@ -53,7 +53,7 @@ func TestHandleGet(t *testing.T) {
 			mockTotal:   2,
 			mockFilters: models.ProductFilters{},
 			wantStatus:  http.StatusOK,
-			wantResponse: &Response{
+			wantResponse: &GetProductsResponse{
 				Products: []Product{
 					{
 						Code:  "P1",
@@ -118,7 +118,7 @@ func TestHandleGet(t *testing.T) {
 			mockTotal:   2,
 			mockFilters: models.ProductFilters{},
 			wantStatus:  http.StatusOK,
-			wantResponse: &Response{
+			wantResponse: &GetProductsResponse{
 				Products: []Product{
 					{
 						Code:  "P2",
@@ -143,7 +143,7 @@ func TestHandleGet(t *testing.T) {
 			mockProducts:     []models.Product{},
 			mockFilters:      models.ProductFilters{},
 			wantStatus:       http.StatusOK,
-			wantResponse:     &Response{Products: []Product{}, Total: 0},
+			wantResponse:     &GetProductsResponse{Products: []Product{}, Total: 0},
 			expectCount:      true,
 			expectPagination: true,
 			expectedOffset:   0,
@@ -156,7 +156,7 @@ func TestHandleGet(t *testing.T) {
 			mockProducts:     []models.Product{},
 			mockFilters:      models.ProductFilters{},
 			wantStatus:       http.StatusOK,
-			wantResponse:     &Response{Products: []Product{}, Total: 0},
+			wantResponse:     &GetProductsResponse{Products: []Product{}, Total: 0},
 			expectCount:      true,
 			expectPagination: true,
 			expectedOffset:   0,
@@ -169,7 +169,7 @@ func TestHandleGet(t *testing.T) {
 			mockProducts:     []models.Product{},
 			mockFilters:      models.ProductFilters{},
 			wantStatus:       http.StatusOK,
-			wantResponse:     &Response{Products: []Product{}, Total: 0},
+			wantResponse:     &GetProductsResponse{Products: []Product{}, Total: 0},
 			expectCount:      true,
 			expectPagination: true,
 			expectedOffset:   0,
@@ -191,7 +191,7 @@ func TestHandleGet(t *testing.T) {
 			mockTotal:   1,
 			mockFilters: models.ProductFilters{Category: "C1"},
 			wantStatus:  http.StatusOK,
-			wantResponse: &Response{
+			wantResponse: &GetProductsResponse{
 				Products: []Product{
 					{
 						Code:  "P1",
@@ -225,7 +225,7 @@ func TestHandleGet(t *testing.T) {
 			mockTotal:   1,
 			mockFilters: models.ProductFilters{PriceLT: float64Ptr(100)},
 			wantStatus:  http.StatusOK,
-			wantResponse: &Response{
+			wantResponse: &GetProductsResponse{
 				Products: []Product{
 					{
 						Code:  "P2",
@@ -265,7 +265,7 @@ func TestHandleGet(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			rr := httptest.NewRecorder()
 
-			handler.HandleGet(rr, req)
+			handler.HandleGetProducts(rr, req)
 
 			if rr.Code != tt.wantStatus {
 				t.Fatalf("expected status %d, got %d", tt.wantStatus, rr.Code)
@@ -276,7 +276,7 @@ func TestHandleGet(t *testing.T) {
 					t.Errorf("expected Content-Type application/json, got %s", ct)
 				}
 
-				var resp Response
+				var resp GetProductsResponse
 				if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
 					t.Fatalf("failed to decode response: %v", err)
 				}
@@ -284,7 +284,136 @@ func TestHandleGet(t *testing.T) {
 				if !reflect.DeepEqual(resp, *tt.wantResponse) {
 					t.Errorf("unexpected response body: got %+v, want %+v", resp, *tt.wantResponse)
 				}
-			} else if tt.wantErrMessage != "" {
+			}
+
+			if tt.wantErrMessage != "" {
+				if !bytes.Contains(rr.Body.Bytes(), []byte(tt.wantErrMessage)) {
+					t.Errorf("expected error message in response, got %s", rr.Body.String())
+				}
+			}
+		})
+	}
+}
+
+func TestHandleGetProduct(t *testing.T) {
+	productCode := "P1"
+	productPrice := 123.45
+	variantPrice := 55.55
+
+	tests := []struct {
+		name           string
+		productCode    string
+		mockProduct    *models.Product
+		mockError      error
+		wantStatus     int
+		wantResponse   *ProductDetailResponse
+		wantErrMessage string
+	}{
+		{
+			name:        "variants should inherit price from product if variant price is not set",
+			productCode: productCode,
+			mockProduct: &models.Product{
+				Code:  productCode,
+				Price: decimal.NewFromFloat(productPrice),
+				Category: models.Category{
+					Code: "C1",
+					Name: "Category 1",
+				},
+				Variants: []models.Variant{
+					{Name: "Variant 1", SKU: "V1-SKU", Price: decimal.NewFromFloat(variantPrice)},
+					{Name: "Variant 2", SKU: "V2-SKU", Price: decimal.NewFromInt(0)},
+				},
+			},
+			wantStatus: http.StatusOK,
+			wantResponse: &ProductDetailResponse{
+				Code:  productCode,
+				Price: productPrice,
+				Category: Category{
+					Code: "C1",
+					Name: "Category 1",
+				},
+				Variants: []VariantDetail{
+					{Name: "Variant 1", SKU: "V1-SKU", Price: variantPrice},
+					{Name: "Variant 2", SKU: "V2-SKU", Price: productPrice},
+				},
+			},
+		},
+		{
+			name:        "product not found",
+			productCode: "non-existent",
+			mockProduct: nil,
+			mockError:   nil,
+			wantStatus:  http.StatusNotFound,
+		},
+		{
+			name:           "repository error",
+			productCode:    "any-code",
+			mockProduct:    nil,
+			mockError:      errors.New("db error"),
+			wantStatus:     http.StatusInternalServerError,
+			wantErrMessage: "db error",
+		},
+		{
+			name:        "success with no variants",
+			productCode: productCode,
+			mockProduct: &models.Product{
+				Code:  productCode,
+				Price: decimal.NewFromFloat(productPrice),
+				Category: models.Category{
+					Code: "C1",
+					Name: "Category 1",
+				},
+				Variants: []models.Variant{},
+			},
+			wantStatus: http.StatusOK,
+			wantResponse: &ProductDetailResponse{
+				Code:  productCode,
+				Price: productPrice,
+				Category: Category{
+					Code: "C1",
+					Name: "Category 1",
+				},
+				Variants: []VariantDetail{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			repo := models.NewMockProductFetcher(ctrl)
+
+			repo.EXPECT().
+				GetProductByCode(tt.productCode).
+				Return(tt.mockProduct, tt.mockError)
+
+			handler := &CatalogHandler{repo: repo}
+
+			req := httptest.NewRequest(http.MethodGet, "/catalog/"+tt.productCode, nil)
+			rr := httptest.NewRecorder()
+
+			handler.HandleGetProduct(rr, req)
+
+			if rr.Code != tt.wantStatus {
+				t.Fatalf("expected status %d, got %d", tt.wantStatus, rr.Code)
+			}
+
+			if tt.wantResponse != nil {
+				if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+					t.Errorf("expected Content-Type application/json, got %s", ct)
+				}
+
+				var resp ProductDetailResponse
+				if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+					t.Fatalf("failed to decode response: %v", err)
+				}
+
+				if !reflect.DeepEqual(resp, *tt.wantResponse) {
+					t.Errorf("unexpected response body: got %+v, want %+v", resp, *tt.wantResponse)
+				}
+			}
+
+			if tt.wantErrMessage != "" {
 				if !bytes.Contains(rr.Body.Bytes(), []byte(tt.wantErrMessage)) {
 					t.Errorf("expected error message in response, got %s", rr.Body.String())
 				}

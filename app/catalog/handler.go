@@ -8,7 +8,7 @@ import (
 	"github.com/mytheresa/go-hiring-challenge/models"
 )
 
-type Response struct {
+type GetProductsResponse struct {
 	Products []Product `json:"products"`
 	Total    int64     `json:"total"`
 }
@@ -28,13 +28,26 @@ type CatalogHandler struct {
 	repo models.ProductFetcher
 }
 
+type ProductDetailResponse struct {
+	Code     string          `json:"code"`
+	Price    float64         `json:"price"`
+	Category Category        `json:"category"`
+	Variants []VariantDetail `json:"variants"`
+}
+
+type VariantDetail struct {
+	Name  string  `json:"name"`
+	SKU   string  `json:"sku"`
+	Price float64 `json:"price"`
+}
+
 func NewCatalogHandler(r models.ProductFetcher) *CatalogHandler {
 	return &CatalogHandler{
 		repo: r,
 	}
 }
 
-func (h *CatalogHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+func (h *CatalogHandler) HandleGetProducts(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	offset, limit := 0, 10
 
@@ -94,12 +107,55 @@ func (h *CatalogHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	// Return the products as a JSON response
 	w.Header().Set("Content-Type", "application/json")
 
-	response := Response{
+	response := GetProductsResponse{
 		Products: products,
 		Total:    total,
 	}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *CatalogHandler) HandleGetProduct(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Path[len("/catalog/"):]
+	product, err := h.repo.GetProductByCode(code)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if product == nil {
+		http.Error(w, "Product not found", http.StatusNotFound)
+		return
+	}
+
+	variants := make([]VariantDetail, len(product.Variants))
+	prodPrice := product.Price.InexactFloat64()
+	for i, v := range product.Variants {
+		price := v.Price.InexactFloat64()
+		if v.Price.IsZero() {
+			price = prodPrice
+		}
+
+		variants[i] = VariantDetail{
+			Name:  v.Name,
+			SKU:   v.SKU,
+			Price: price,
+		}
+	}
+
+	resp := ProductDetailResponse{
+		Code:     product.Code,
+		Price:    prodPrice,
+		Category: Category{Code: product.Category.Code, Name: product.Category.Name},
+		Variants: variants,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
