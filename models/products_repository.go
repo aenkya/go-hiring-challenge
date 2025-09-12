@@ -1,5 +1,7 @@
 package models
 
+//go:generate mockgen -source=products_repository.go -destination=mock_products_repository.go -package=models
+
 import (
 	"gorm.io/gorm"
 )
