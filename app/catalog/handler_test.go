@@ -496,6 +496,93 @@ func TestHandleGetCategories(t *testing.T) {
 	}
 }
 
+func TestHandleCreateCategory(t *testing.T) {
+	tests := []struct {
+		name           string
+		body           string
+		mockError      error
+		wantStatus     int
+		wantResponse   *models.Category
+		wantErrMessage string
+	}{
+		{
+			name:       "success",
+			body:       `{"code": "C-NEW", "name": "New Category"}`,
+			mockError:  nil,
+			wantStatus: http.StatusCreated,
+			wantResponse: &models.Category{
+				Code: "C-NEW",
+				Name: "New Category",
+			},
+		},
+		{
+			name:           "invalid json body",
+			body:           `{"code": "C-NEW"`,
+			wantStatus:     http.StatusBadRequest,
+			wantErrMessage: "Invalid request body",
+		},
+		{
+			name:           "missing required fields - code",
+			body:           `{"name": "Missing Code"}`,
+			wantStatus:     http.StatusBadRequest,
+			wantErrMessage: "Category code and name are required",
+		},
+		{
+			name:           "missing required fields - name",
+			body:           `{"code": "MISS-NAME"}`,
+			wantStatus:     http.StatusBadRequest,
+			wantErrMessage: "Category code and name are required",
+		},
+		{
+			name:           "repository error",
+			body:           `{"code": "C-FAIL", "name": "Failing Category"}`,
+			mockError:      errors.New("db insert error"),
+			wantStatus:     http.StatusInternalServerError,
+			wantErrMessage: "Failed to create category",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			repo := models.NewMockProductFetcher(ctrl)
+
+			if tt.mockError != nil || (tt.wantStatus == http.StatusCreated) {
+				repo.EXPECT().CreateCategory(gomock.Any()).Return(tt.mockError).AnyTimes()
+			}
+
+			handler := &CatalogHandler{repo: repo}
+
+			req := httptest.NewRequest(http.MethodPost, "/categories", bytes.NewBufferString(tt.body))
+			rr := httptest.NewRecorder()
+
+			handler.HandleCreateCategory(rr, req)
+
+			if rr.Code != tt.wantStatus {
+				t.Fatalf("expected status %d, got %d", tt.wantStatus, rr.Code)
+			}
+
+			if tt.wantResponse != nil {
+				var resp models.Category
+				if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+					t.Fatalf("failed to decode response: %v", err)
+				}
+
+				if resp.Code != tt.wantResponse.Code || resp.Name != tt.wantResponse.Name {
+					t.Errorf("unexpected response body: got %+v, want %+v", resp, *tt.wantResponse)
+				}
+			}
+
+			if tt.wantErrMessage != "" {
+				body := rr.Body.String()
+				if !bytes.Contains([]byte(body), []byte(tt.wantErrMessage)) {
+					t.Errorf("expected error message %q in response, got %q", tt.wantErrMessage, body)
+				}
+			}
+		})
+	}
+}
+
 func float64Ptr(f float64) *float64 {
 	return &f
 }

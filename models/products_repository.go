@@ -17,6 +17,7 @@ type ProductFetcher interface {
 	GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error)
 	GetProductByCode(code string) (*Product, error)
 	GetAllCategories() ([]Category, error)
+	CreateCategory(category *Category) error
 }
 
 type ProductsRepository struct {
@@ -89,4 +90,8 @@ func (r *ProductsRepository) GetAllCategories() ([]Category, error) {
 	}
 
 	return categories, nil
+}
+
+func (r *ProductsRepository) CreateCategory(category *Category) error {
+	return r.db.Create(category).Error
 }

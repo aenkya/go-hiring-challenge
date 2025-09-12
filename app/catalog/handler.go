@@ -161,6 +161,30 @@ func (h *CatalogHandler) HandleGetProduct(w http.ResponseWriter, r *http.Request
 	}
 }
 
+func (h *CatalogHandler) HandleCreateCategory(w http.ResponseWriter, r *http.Request) {
+	var newCategory models.Category
+	if err := json.NewDecoder(r.Body).Decode(&newCategory); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if newCategory.Code == "" || newCategory.Name == "" {
+		http.Error(w, "Category code and name are required", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.repo.CreateCategory(&newCategory); err != nil {
+		http.Error(w, "Failed to create category", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(newCategory); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func (h *CatalogHandler) HandleGetCategories(w http.ResponseWriter, r *http.Request) {
 	res, err := h.repo.GetAllCategories()
 	if err != nil {

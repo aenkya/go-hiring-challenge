@@ -54,6 +54,20 @@ func (mr *MockProductFetcherMockRecorder) CountProducts(filters any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountProducts", reflect.TypeOf((*MockProductFetcher)(nil).CountProducts), filters)
 }
 
+// CreateCategory mocks base method.
+func (m *MockProductFetcher) CreateCategory(category *Category) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCategory", category)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateCategory indicates an expected call of CreateCategory.
+func (mr *MockProductFetcherMockRecorder) CreateCategory(category any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCategory", reflect.TypeOf((*MockProductFetcher)(nil).CreateCategory), category)
+}
+
 // GetAllCategories mocks base method.
 func (m *MockProductFetcher) GetAllCategories() ([]Category, error) {
 	m.ctrl.T.Helper()
