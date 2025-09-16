@@ -11,7 +11,7 @@ type ProductFilters struct {
 	PriceLT  *float64
 }
 
-type ProductFetcher interface {
+type Repository interface {
 	GetAllProducts() ([]Product, error)
 	CountProducts(filters ProductFilters) (int64, error)
 	GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error)
@@ -20,17 +20,17 @@ type ProductFetcher interface {
 	CreateCategory(category *Category) error
 }
 
-type ProductsRepository struct {
+type productsRepository struct {
 	db *gorm.DB
 }
 
-func NewProductsRepository(db *gorm.DB) ProductFetcher {
-	return &ProductsRepository{
+func NewProductsRepository(db *gorm.DB) Repository {
+	return &productsRepository{
 		db: db,
 	}
 }
 
-func (r *ProductsRepository) GetAllProducts() ([]Product, error) {
+func (r *productsRepository) GetAllProducts() ([]Product, error) {
 	var products []Product
 	if err := r.db.Preload("Variants").Preload("Category").Find(&products).Error; err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (r *ProductsRepository) GetAllProducts() ([]Product, error) {
 	return products, nil
 }
 
-func (r *ProductsRepository) CountProducts(filters ProductFilters) (int64, error) {
+func (r *productsRepository) CountProducts(filters ProductFilters) (int64, error) {
 	var count int64
 	query := r.db.Model(&Product{})
 	query = applyFilters(query, filters)
@@ -49,7 +49,7 @@ func (r *ProductsRepository) CountProducts(filters ProductFilters) (int64, error
 	return count, nil
 }
 
-func (r *ProductsRepository) GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error) {
+func (r *productsRepository) GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error) {
 	var products []Product
 	query := r.db.Preload("Variants").Preload("Category")
 	query = applyFilters(query, filters)
@@ -72,7 +72,7 @@ func applyFilters(query *gorm.DB, filters ProductFilters) *gorm.DB {
 	return query
 }
 
-func (r *ProductsRepository) GetProductByCode(code string) (*Product, error) {
+func (r *productsRepository) GetProductByCode(code string) (*Product, error) {
 	var product Product
 	if err := r.db.Preload("Variants").Preload("Category").Where("code = ?", code).First(&product).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -85,7 +85,7 @@ func (r *ProductsRepository) GetProductByCode(code string) (*Product, error) {
 	return &product, nil
 }
 
-func (r *ProductsRepository) GetAllCategories() ([]Category, error) {
+func (r *productsRepository) GetAllCategories() ([]Category, error) {
 	var categories []Category
 	if err := r.db.Find(&categories).Error; err != nil {
 		return nil, err
@@ -94,6 +94,6 @@ func (r *ProductsRepository) GetAllCategories() ([]Category, error) {
 	return categories, nil
 }
 
-func (r *ProductsRepository) CreateCategory(category *Category) error {
+func (r *productsRepository) CreateCategory(category *Category) error {
 	return r.db.Create(category).Error
 }

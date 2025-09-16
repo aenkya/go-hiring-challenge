@@ -249,7 +249,7 @@ func TestHandleGetProducts(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
-			repo := models.NewMockProductFetcher(ctrl)
+			repo := models.NewMockRepository(ctrl)
 			if tt.expectCount {
 				repo.EXPECT().CountProducts(tt.mockFilters).Return(tt.mockTotal, tt.mockCountErr)
 			}
@@ -381,7 +381,7 @@ func TestHandleGetProduct(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			repo := models.NewMockProductFetcher(ctrl)
+			repo := models.NewMockRepository(ctrl)
 
 			repo.EXPECT().
 				GetProductByCode(tt.productCode).
@@ -463,7 +463,7 @@ func TestHandleGetCategories(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			repo := models.NewMockProductFetcher(ctrl)
+			repo := models.NewMockRepository(ctrl)
 
 			repo.EXPECT().GetAllCategories().Return(tt.mockCategories, tt.mockError)
 
@@ -545,7 +545,7 @@ func TestHandleCreateCategory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			repo := models.NewMockProductFetcher(ctrl)
+			repo := models.NewMockRepository(ctrl)
 
 			if tt.mockError != nil || (tt.wantStatus == http.StatusCreated) {
 				repo.EXPECT().CreateCategory(gomock.Any()).Return(tt.mockError).AnyTimes()

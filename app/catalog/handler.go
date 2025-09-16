@@ -26,7 +26,7 @@ type Category struct {
 }
 
 type CatalogHandler struct {
-	repo models.ProductFetcher
+	repo models.Repository
 }
 
 type ProductDetailResponse struct {
@@ -42,7 +42,7 @@ type VariantDetail struct {
 	Price float64 `json:"price"`
 }
 
-func NewCatalogHandler(r models.ProductFetcher) *CatalogHandler {
+func NewCatalogHandler(r models.Repository) *CatalogHandler {
 	return &CatalogHandler{
 		repo: r,
 	}

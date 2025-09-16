@@ -15,32 +15,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockProductFetcher is a mock of ProductFetcher interface.
-type MockProductFetcher struct {
+// MockRepository is a mock of Repository interface.
+type MockRepository struct {
 	ctrl     *gomock.Controller
-	recorder *MockProductFetcherMockRecorder
+	recorder *MockRepositoryMockRecorder
 	isgomock struct{}
 }
 
-// MockProductFetcherMockRecorder is the mock recorder for MockProductFetcher.
-type MockProductFetcherMockRecorder struct {
-	mock *MockProductFetcher
+// MockRepositoryMockRecorder is the mock recorder for MockRepository.
+type MockRepositoryMockRecorder struct {
+	mock *MockRepository
 }
 
-// NewMockProductFetcher creates a new mock instance.
-func NewMockProductFetcher(ctrl *gomock.Controller) *MockProductFetcher {
-	mock := &MockProductFetcher{ctrl: ctrl}
-	mock.recorder = &MockProductFetcherMockRecorder{mock}
+// NewMockRepository creates a new mock instance.
+func NewMockRepository(ctrl *gomock.Controller) *MockRepository {
+	mock := &MockRepository{ctrl: ctrl}
+	mock.recorder = &MockRepositoryMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockProductFetcher) EXPECT() *MockProductFetcherMockRecorder {
+func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
 // CountProducts mocks base method.
-func (m *MockProductFetcher) CountProducts(filters ProductFilters) (int64, error) {
+func (m *MockRepository) CountProducts(filters ProductFilters) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CountProducts", filters)
 	ret0, _ := ret[0].(int64)
@@ -49,13 +49,13 @@ func (m *MockProductFetcher) CountProducts(filters ProductFilters) (int64, error
 }
 
 // CountProducts indicates an expected call of CountProducts.
-func (mr *MockProductFetcherMockRecorder) CountProducts(filters any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CountProducts(filters any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountProducts", reflect.TypeOf((*MockProductFetcher)(nil).CountProducts), filters)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountProducts", reflect.TypeOf((*MockRepository)(nil).CountProducts), filters)
 }
 
 // CreateCategory mocks base method.
-func (m *MockProductFetcher) CreateCategory(category *Category) error {
+func (m *MockRepository) CreateCategory(category *Category) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateCategory", category)
 	ret0, _ := ret[0].(error)
@@ -63,13 +63,13 @@ func (m *MockProductFetcher) CreateCategory(category *Category) error {
 }
 
 // CreateCategory indicates an expected call of CreateCategory.
-func (mr *MockProductFetcherMockRecorder) CreateCategory(category any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CreateCategory(category any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCategory", reflect.TypeOf((*MockProductFetcher)(nil).CreateCategory), category)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCategory", reflect.TypeOf((*MockRepository)(nil).CreateCategory), category)
 }
 
 // GetAllCategories mocks base method.
-func (m *MockProductFetcher) GetAllCategories() ([]Category, error) {
+func (m *MockRepository) GetAllCategories() ([]Category, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllCategories")
 	ret0, _ := ret[0].([]Category)
@@ -78,13 +78,13 @@ func (m *MockProductFetcher) GetAllCategories() ([]Category, error) {
 }
 
 // GetAllCategories indicates an expected call of GetAllCategories.
-func (mr *MockProductFetcherMockRecorder) GetAllCategories() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetAllCategories() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllCategories", reflect.TypeOf((*MockProductFetcher)(nil).GetAllCategories))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllCategories", reflect.TypeOf((*MockRepository)(nil).GetAllCategories))
 }
 
 // GetAllProducts mocks base method.
-func (m *MockProductFetcher) GetAllProducts() ([]Product, error) {
+func (m *MockRepository) GetAllProducts() ([]Product, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllProducts")
 	ret0, _ := ret[0].([]Product)
@@ -93,13 +93,13 @@ func (m *MockProductFetcher) GetAllProducts() ([]Product, error) {
 }
 
 // GetAllProducts indicates an expected call of GetAllProducts.
-func (mr *MockProductFetcherMockRecorder) GetAllProducts() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetAllProducts() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProducts", reflect.TypeOf((*MockProductFetcher)(nil).GetAllProducts))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProducts", reflect.TypeOf((*MockRepository)(nil).GetAllProducts))
 }
 
 // GetAllProductsWithPagination mocks base method.
-func (m *MockProductFetcher) GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error) {
+func (m *MockRepository) GetAllProductsWithPagination(offset, limit int, filters ProductFilters) ([]Product, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllProductsWithPagination", offset, limit, filters)
 	ret0, _ := ret[0].([]Product)
@@ -108,13 +108,13 @@ func (m *MockProductFetcher) GetAllProductsWithPagination(offset, limit int, fil
 }
 
 // GetAllProductsWithPagination indicates an expected call of GetAllProductsWithPagination.
-func (mr *MockProductFetcherMockRecorder) GetAllProductsWithPagination(offset, limit, filters any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetAllProductsWithPagination(offset, limit, filters any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProductsWithPagination", reflect.TypeOf((*MockProductFetcher)(nil).GetAllProductsWithPagination), offset, limit, filters)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProductsWithPagination", reflect.TypeOf((*MockRepository)(nil).GetAllProductsWithPagination), offset, limit, filters)
 }
 
 // GetProductByCode mocks base method.
-func (m *MockProductFetcher) GetProductByCode(code string) (*Product, error) {
+func (m *MockRepository) GetProductByCode(code string) (*Product, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProductByCode", code)
 	ret0, _ := ret[0].(*Product)
@@ -123,7 +123,7 @@ func (m *MockProductFetcher) GetProductByCode(code string) (*Product, error) {
 }
 
 // GetProductByCode indicates an expected call of GetProductByCode.
-func (mr *MockProductFetcherMockRecorder) GetProductByCode(code any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetProductByCode(code any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductByCode", reflect.TypeOf((*MockProductFetcher)(nil).GetProductByCode), code)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductByCode", reflect.TypeOf((*MockRepository)(nil).GetProductByCode), code)
 }
