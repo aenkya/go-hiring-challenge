@@ -15,6 +15,21 @@ import (
 	"github.com/mytheresa/go-hiring-challenge/models"
 )
 
+func registerRoutes(mux *http.ServeMux, cat *catalog.CatalogHandler) {
+	mux.HandleFunc("GET /catalog", cat.HandleGetProducts)
+	mux.HandleFunc("GET /catalog/", cat.HandleGetProduct)
+	mux.HandleFunc("/categories", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			cat.HandleGetCategories(w, r)
+		case http.MethodPost:
+			cat.HandleCreateCategory(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+}
+
 func main() {
 	// Load environment variables from .env file
 	if err := godotenv.Load(".env"); err != nil {
@@ -40,7 +55,7 @@ func main() {
 
 	// Set up routing
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /catalog", cat.HandleGet)
+	registerRoutes(mux, cat)
 
 	// Set up the HTTP server
 	srv := &http.Server{
